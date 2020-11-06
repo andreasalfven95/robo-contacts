@@ -1,61 +1,54 @@
-/* import { render } from "@testing-library/react"; */
-import React, { useState, useEffect } from "react";
-import CardList from "../components/CardList";
-import SearchBox from "../components/SearchBox";
-import "./App.css"
-import ErrorBoundry from "../components/ErrorBoundry"
-/* import Scroll from "../components/Scroll" */
+import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { setSearchField, requestRobots } from '../actions';
 
-function App() {
-    /* constructor() {
-        super()
-        //state = things that can change and affect our app
-        this.state = {
-            robots: [],
-            searchfield: "",
-        } */
+import CardList from '../components/CardList';
+import SearchBox from '../components/SearchBox';
+import ErrorBoundry from '../components/ErrorBoundry';
 
-    //REACT HOOKS, below is the STATES
-    //useState returns the state (robots) and the function that changes that state(setRobots)
-    const [robots, setRobots] = useState([]);
-    const [searchfield, setSearchfield] = useState("");
+import './App.css';
 
-    /* componentDidMount() {
-        fetch("https://jsonplaceholder.typicode.com/users")
-            .then(response => response.json())
-            .then(users => {
-                this.setState({ robots: users })
-            });
-    } */
-
-    useEffect(() => {
-        fetch("https://jsonplaceholder.typicode.com/users")
-            .then(response => response.json())
-            .then(users => { setRobots(users) });
-    }, [])
-
-    const onSearchChange = (event) => {
-        setSearchfield(event.target.value)
-    }
-
-    const filteredRobots = robots.filter(robot => {
-        return robot.name.toLowerCase().includes(searchfield.toLowerCase());
-    })
-    if (!robots.length) {
-        return <h1 className="tc f1">Loading...</h1>
-    } else {
-        return (
-            <div className="tc">
-                <h1 className="f1">RoboFriends</h1>
-                <SearchBox searchChange={onSearchChange} />
-                {/* <Scroll> */}
-                <ErrorBoundry>
-                    <CardList robots={filteredRobots} />
-                </ErrorBoundry>
-                {/* </Scroll> */}
-            </div>
-        );
-    }
+// parameter state comes from index.js provider store state(rootReducers)
+const mapStateToProps = (state) => {
+  return {
+    searchField: state.searchRobots.searchField,
+    robots: state.requestRobots.robots,
+    isPending: state.requestRobots.isPending
+  }
 }
 
-export default App;
+// dispatch the DOM changes to call an action. note mapStateToProps returns object, mapDispatchToProps returns function
+// the function returns an object then uses connect to change the data from redecers.
+const mapDispatchToProps = (dispatch) => {
+  return {
+    onSearchChange: (event) => dispatch(setSearchField(event.target.value)),
+    onRequestRobots: () => dispatch(requestRobots())
+  }
+}
+
+class App extends Component {
+  componentDidMount() {
+    this.props.onRequestRobots();
+  }
+
+  render() {
+    const { robots, searchField, onSearchChange, isPending } = this.props;
+    const filteredRobots = robots.filter(robot => {
+      return robot.name.toLowerCase().includes(searchField.toLowerCase());
+    })
+    return (
+      <div className='tc'>
+        <h1 className='f1'>RoboContacts</h1>
+        <SearchBox searchChange={onSearchChange} />
+        {isPending ? <h1>Loading</h1> :
+          <ErrorBoundry>
+            <CardList robots={filteredRobots} />
+          </ErrorBoundry>
+        }
+      </div>
+    );
+  }
+}
+
+// action done from mapDispatchToProps will channge state from mapStateToProps
+export default connect(mapStateToProps, mapDispatchToProps)(App)
